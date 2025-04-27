@@ -1,13 +1,8 @@
 import * as morton from "./morton";
 import { decimal2code, gridSize, isNumeric, code2decimal } from "./utils";
-// export class GeoSOT {
-//     radius: number;
-//     constructor(options: {
-//         radius: number
-//     }) {
-//         this.radius = options.radius || 6378137;
-//     }
-// }
+/**
+ * GeoSOT 来自标准GBT+40087-2021
+ */
 /**
  * 经纬度转二进制编码
  * @param lng 经度，单位是度
@@ -16,9 +11,7 @@ import { decimal2code, gridSize, isNumeric, code2decimal } from "./utils";
  * @returns 二进制编码
  */
 export function encode2number(lng: number, lat: number, level: number): bigint {
-    lng = decimal2code(lng)
-    lat = decimal2code(lat)
-    return morton.magicbits(lng, lat);
+    return morton.magicbits(decimal2code(lng), decimal2code(lat));
 }
 /**
  * 经纬度转四进制编码
@@ -72,8 +65,8 @@ export function xyFromCode(code: string) {
  * @returns 瓦片的经纬度
  */
 export function cornerFromXY(x: number, y: number, level: number) {
-    const cornerLng = code2decimal(x << 32 - level)
-    const cornerLat = code2decimal(y << 32 - level)
+    const cornerLng = code2decimal(BigInt(x << 32 - level))
+    const cornerLat = code2decimal(BigInt(y << 32 - level))
     return { lng: cornerLng, lat: cornerLat }
 }
 /**

@@ -2,53 +2,41 @@
 export function round(value: number, n: number) {
     return Math.round(value * Math.pow(10, n)) / Math.pow(10, n);
 }
-
-export let DEGREE_PRECISION = 6;
-export let SECOND_PRECISION = 4
-export let HEIGHT_EXTENT = 50000000
 export let A = 6378137
 export let B = 6356752
-export function initConstant(options: { a?: number, b?: number, heightExtent?: number, degreePresion?: number, secondPresion?: number }) {
+export function initConstant(options: { a?: number, b?: number, }) {
     if (options.a) {
         A = options.a
     }
     if (options.b) {
         B = options.b
     }
-    if (options.heightExtent) {
-        HEIGHT_EXTENT = options.heightExtent
-    }
-    if (options.secondPresion) {
-        SECOND_PRECISION = options.secondPresion
-    }
-    if (options.degreePresion) {
-        DEGREE_PRECISION = options.degreePresion
-    }
 }
 /**
- * 将坐标中的“度-分-秒”拼接为一个32位长的编码，度占8位，分和秒分别占6位，小数点后的数字精确到1/2048秒，占用11位
+ * 将十进制的度转为一个32位长的编码，度占8位，分和秒分别占6位，小数点后的数字精确到1/2048秒，占用11位
+ * 左侧第一个bit位是符号位，>=0为0，反之为1
  */
-export function decimal2code(dec: number) {
+export function decimal2code(dec: number): bigint {
     let val = dec < 0.0 ? -dec : dec;
     let g = dec < 0.0 ? 1 : 0;
     let d = Math.floor(val);
-    let dm = round((val - d) * 60.0, DEGREE_PRECISION);
+    let dm = (val - d) * 60;
     let m = Math.floor(dm);
-    let seconds = round((dm - m) * 60.0, SECOND_PRECISION);
+    let seconds = (dm - m) * 60.0;
     let s = Math.floor(seconds);
     let dot_seconds = (seconds - s) * 2048.0;
-    let s11 = Math.round(dot_seconds);
-    return (g << 31) | (d << 23) | (m << 17) | (s << 11) | s11;
+    let s11 = Math.floor(dot_seconds);
+    return (BigInt(g) << 31n) | (BigInt(d) << 23n) | (BigInt(m) << 17n) | (BigInt(s) << 11n) | BigInt(s11);
 }
-export function code2decimal(x: number) {
-    const G = x >>> 31; // 1b
-    const D = (x >>> 23) & 0xff; // 8b
-    const M = (x >>> 17) & 0x3f; // 6b
-    const S = (x >>> 11) & 0x3f; // 6b
-    const S11 = x & 0x7ff; // 11b
-    const s11 = round(S11 / 2048.0, SECOND_PRECISION);
+export function code2decimal(x: bigint): number {
+    const G = Number(x >> 31n); // 1b
+    const D = Number((x >> 23n) & 0xffn); // 8b
+    const M = Number((x >> 17n) & 0x3fn); // 6b
+    const S = Number((x >> 11n) & 0x3fn); // 6b
+    const S11 = Number(x & 0x7ffn); // 11b
+    const s11 = S11 / 2048.0;
     const seconds = S + s11;
-    let degree = round(D + M / 60.0 + seconds / 3600.0, DEGREE_PRECISION);
+    let degree = D + M / 60.0 + seconds / 3600.0;
     if (G > 0) {
         degree = -degree;
     }
@@ -56,6 +44,9 @@ export function code2decimal(x: number) {
 }
 export function isNumeric(value: string) {
     return /^\d$/.test(value);
+}
+export function getSize(level: number) {
+    return (gridSize[level] * Math.PI / 180) * A
 }
 export const gridSize = [
     512,
