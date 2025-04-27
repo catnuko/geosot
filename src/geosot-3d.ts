@@ -51,7 +51,7 @@ export function encodeBinary3D(lng: number, lat: number, ele: number, level: num
  * @returns 一个包含经度、纬度和高度的对象
  */
 export function decodeBinary3D(binary3D: Binary3D) {
-    const { lngBits, latBits, eleBits, level } = binary3D;
+    const { lngBits, latBits, eleBits } = binary3D;
     const lng = code2decimal(lngBits)
     const lat = code2decimal(latBits)
     const D = code2decimal(eleBits)

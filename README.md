@@ -4,15 +4,18 @@
 
 [![npm version](https://badgen.net/npm/v/geosot)](https://npm.im/geosot) [![npm downloads](https://badgen.net/npm/dm/geosot)](https://npm.im/geosot)
 
-## Using this template
+## Features
 
-Features:
-
+### GeoSOT
 - 经纬度转二进制编码
 - 经纬度转四进制编码
 - 获取经纬度所在的行列号XY
 - 经纬度转所在瓦片的角点
 - 经纬度转所在瓦片的bbox
+
+### GeoSOT-3D
+- 经纬度高度转二进制三维码，二进制一维码，八进制一维码
+- 二进制三维码，二进制一维码，八进制一维码相互转换
 
 
 ## Install
@@ -23,8 +26,9 @@ npm i geosot
 
 ## Usage
 
+### GeoSOT
 ```typescript
-import * as geosot from 'geosot'
+import {geosot,geosot3d}  from 'geosot'
 import sexagesimal from '@mapbox/sexagesimal'
 const [lat, lng] = sexagesimal.pair("39° 54′ 37.0″ N, 116° 18′ 54.8″ E");
 const compare = (level: number, expectValue: string) => {
@@ -53,10 +57,26 @@ compare(31, "39° 54′ 37.0″ N, 116° 18′ 54.7998046875″ E")
 compare(32, "39° 54′ 37.0″ N, 116° 18′ 54.7998046875″ E")
 ```
 
-## Sponsors
+### GeoSOT-3D
 
-[![sponsors](https://sponsors-images.egoist.dev/sponsors.svg)](https://github.com/sponsors/egoist)
+```typescript
+const ps = [
+    [116.315228, 39.91028, 100.123456789],
+    [-116.315228, -39.91028, -100.123456789],
+    [116.315228, -39.91028, 100.123456789],
+    [-116.315228, 39.91028, 100.123456789],
+    [116.315228, 39.91028, -100.123456789],
+]
+for (let p of ps) {
+    const binary3D = geosot3d.encodeBinary3D(p[0], p[1], p[2], 32)
+    const binary1D = geosot3d.binary3DToBinary1D(binary3D)
+    const octal1D = geosot3d.binary3DToOctal1D(binary3D)
+    expect(geosot3d.octal1DToBinary3D(octal1D)).toStrictEqual(binary3D);
+    expect(geosot3d.binary1DToBinary3D(binary1D)).toStrictEqual(binary3D);
 
-## License
-
-MIT &copy; [EGOIST](https://github.com/sponsors/egoist)
+    const corner = geosot3d.decodeBinary3D(geosot3d.binary1DToBinary3D(binary1D));
+    expect(corner.lng).toBeCloseTo(p[0], 6)
+    expect(corner.lat).toBeCloseTo(p[1], 6)
+    expect(Math.abs(corner.ele - p[2])).toBeLessThan(1.5)
+}
+```
