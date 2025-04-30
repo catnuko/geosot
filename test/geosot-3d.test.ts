@@ -120,6 +120,11 @@ test("geosot3d.move", () => {
         const a = geosot3d.add(b, { x: 3, y: 3, z: 3 });
         expect(geosot3d.sub(a, b)).toStrictEqual({ x: 3, y: 3, z: 3 })
     }
+    {
+        const b = geosot3d.encodeBinary3D(lng, lat, ele, level);
+        const a = geosot3d.add(b, { x: 1, y: 2, z: 3 });
+        expect(geosot3d.sub(a, b)).toStrictEqual({ x: 1, y: 2, z: 3 })
+    }
 
     {
         const b = geosot3d.encodeBinary3D(lng, lat, ele, level);
@@ -134,7 +139,8 @@ test("geosot3d.move", () => {
     }
     {
         const b = geosot3d.encodeBinary3D(lng, lat, ele, level);
-        const a = geosot3d.add(b, { x: -3, y: -3, z: -3 });
-        expect(geosot3d.sub(a, b)).toStrictEqual({ x: -3, y: -3, z: -3 })
+        const a = geosot3d.add(b, { x: -3, y: -2, z: -1 });
+        expect(geosot3d.sub(a, b)).toStrictEqual({ x: -3, y: -2, z: -1 })
     }
 })
+//0xFFFFFFFFn

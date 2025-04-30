@@ -285,8 +285,8 @@ export function add(binary3D: bigint, offset: Offset): bigint {
 export function sub(a: bigint, b: bigint): Offset {
     const shift = 31n - (a & MASK_5); // 提取级别（最低5位）
     const lngShift = offsetBits.lng + shift;
-    const latShift = offsetBits.lng + shift;
-    const eleShift = offsetBits.lng + shift
+    const latShift = offsetBits.lat + shift;
+    const eleShift = offsetBits.ele + shift
     const x = ((a >> lngShift) & MASK_32) - ((b >> lngShift) & MASK_32)
     const y = ((a >> latShift) & MASK_32) - ((b >> latShift) & MASK_32)
     const z = ((a >> eleShift) & MASK_32) - ((b >> eleShift) & MASK_32)
