@@ -4,7 +4,7 @@
 
 [![npm version](https://badgen.net/npm/v/geosot)](https://npm.im/geosot) [![npm downloads](https://badgen.net/npm/dm/geosot)](https://npm.im/geosot)
 
-## Features
+## 特性
 
 ### GeoSOT
 - 经纬度转二进制编码
@@ -16,15 +16,18 @@
 ### GeoSOT-3D
 - 经纬度高度转二进制三维码，二进制一维码，八进制一维码
 - 二进制三维码，二进制一维码，八进制一维码相互转换
+- 沿经度、纬度、高度移动二进制三维码
+- 二进制三维码加offset,offset是有符号整数
+- 两个二进制三维码相减得到offset
 
 
-## Install
+## 安装
 
 ```bash
 npm i geosot
 ```
 
-## Usage
+## 使用
 
 ### GeoSOT
 ```typescript

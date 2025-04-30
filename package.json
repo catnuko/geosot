@@ -1,10 +1,15 @@
 {
   "name": "geosot",
-  "version": "1.0.1",
-  "description": "geosot",
+  "version": "1.0.2",
+  "description": "geosot和geosot-3d的编码解码",
   "publishConfig": {
     "access": "public"
   },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/catnuko/geosot"
+  },
+  "homepage": "https://github.com/catnuko/geosot",
   "files": [
     "dist"
   ],

@@ -45,9 +45,6 @@ export function code2decimal(x: bigint): number {
 export function isNumeric(value: string) {
     return /^\d$/.test(value);
 }
-export function getSize(level: number) {
-    return (gridSize[level] * Math.PI / 180) * A
-}
 export const gridSize = [
     512,
     256,
@@ -83,3 +80,7 @@ export const gridSize = [
     2.712673611111111e-7,
     1.3563368055555556e-7,
 ]
+
+export const MASK_5 = 0x1Fn;
+export const MASK_32 = 0xFFFFFFFFn;
+export const MASK_96 = 0xFFFFFFFFFFFFFFFFFFFFFFFFn;
