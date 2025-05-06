@@ -26,49 +26,63 @@ type Binary1D = {
     binary1D: bigint,
     level: number
 }
+export function elevationToDegrees(ele: number) {
+    const D = ((ele + B) * 180) / (A * Math.PI)//海拔转为度
+    return D
+}
+export function degreesToElevation(D: number) {
+    const H = D * A * (Math.PI / 180) - B//度转为海拔
+    return H
+}
 export function getSizeInMeters(level: number) {
     return gridSize[level] * A * (Math.PI / 180)
+}
+/**
+ * 获取0米所在网格的下底面大地高
+ * @param level 
+ * @returns 
+ */
+export function getSurfaceElevation(level: number) {
+    const p1 = [120, 30, 0, level]
+    const o = locToOctal1D(p1[0], p1[1], p1[2], p1[3])
+    const v = octal1DToLoc(o)
+    return v.ele;
 }
 export function getSize(level: number) {
     return gridSize[level];
 }
-export function encode3d(lngBits: bigint, latBits: bigint, eleBits: bigint, level: number): bigint {
+function encode3d(lngBits: bigint, latBits: bigint, eleBits: bigint, level: number): bigint {
     return (lngBits << 69n) | (latBits << 37n) | (eleBits << 5n) | BigInt(level - 1);
 }
 export function decodeLevel(code3dOr1d: bigint): bigint {
     return (code3dOr1d & MASK_5) + 1n
 }
-export function decode3d(code3d: bigint): Binary3D {
+function decode3d(code3d: bigint): Binary3D {
     const level = Number(decodeLevel(code3d))
     const eleBits = (code3d >> 5n) & MASK_32
     const latBits = (code3d >> 37n) & MASK_32
     const lngBits = (code3d >> 69n) & MASK_32
     return { lngBits, latBits, eleBits, level }
 }
-export function encode1d(binary1D: bigint, level: number): bigint {
+function encode1d(binary1D: bigint, level: number): bigint {
     return (binary1D << 5n) | BigInt(level - 1);
 }
-export function decode1d(code1d: bigint): Binary1D {
+function decode1d(code1d: bigint): Binary1D {
     const level = Number(decodeLevel(code1d))
     const binary1D = (code1d >> 5n) & MASK_96
     return { binary1D, level }
 }
 /**
- * 将经度、纬度和高度编码为一个二进制的三维编码
- *
- * @param lng - 经度，以度为单位。范围-180到180度
- * @param lat - 纬度，以度为单位。范围-90到90度
- * @param ele - 高度，以米为单位。距离椭球面的大地高
- * @param level - 网格级别，决定网格的分辨率。
- * @param radius - 地球半径的近似值，默认为6378137米。
- * @returns 一个二进制的三维编码对象
+ * 将经纬度和高程转换为一个二进制的三维编码，编码值精度会对齐到level层级
+ * @param lng - 经度
+ * @param lat - 纬度
+ * @param ele - 高程
+ * @param level - 层级
+ * @returns 一个二进制的三维编码
  */
-export function encodeBinary3D(lng: number, lat: number, ele: number, level: number,): bigint {
-    const lngBits = BigInt(decimal2code(lng))
-    const latBits = BigInt(decimal2code(lat))
-    const D = ((ele + B) * 180) / (A * Math.PI)//海拔转为度
-    const eleBits = BigInt(decimal2code(D))
-    return encode3d(lngBits, latBits, eleBits, level)
+export function locToBinary3D(lng: number, lat: number, ele: number, level: number,): bigint {
+    const octal1D = locToOctal1D(lng, lat, ele, level)
+    return octal1DToBinary3D(octal1D)
 }
 /**
  * 将一个二进制的三维编码解码回经度、纬度和高度
@@ -76,30 +90,38 @@ export function encodeBinary3D(lng: number, lat: number, ele: number, level: num
  * @param binary3D - 一个二进制的三维编码对象
  * @returns 一个包含经度、纬度和高度的对象
  */
-export function decodeBinary3D(binary3d: bigint) {
+export function binary3dToLoc(binary3d: bigint) {
     const { lngBits, latBits, eleBits } = decode3d(binary3d);
     const lng = code2decimal(lngBits)
     const lat = code2decimal(latBits)
-    const D = code2decimal(eleBits)
-    const H = D * A * (Math.PI / 180) - B//度转为海拔
+    const H = degreesToElevation(code2decimal(eleBits))
     return { lng, lat, ele: H }
 }
 /**
- * 将经度、纬度和高度编码为一个二进制的一维编码
+ * 将经度、纬度和高度编码为一个二进制的一维编码，编码值精度会对齐到level层级
  *
  * @param lng - 经度，以度为单位。范围-180到180度
  * @param lat - 纬度，以度为单位。范围-90到90度
  * @param ele - 高度，以米为单位。距离椭球面的大地高
  * @param level - 网格级别，决定网格的分辨率。
- * @param radius - 地球半径的近似值，默认为6378137米。
  * @returns 一个二进制的一维编码
  */
-export function encodeBinary1D(lng: number, lat: number, ele: number, level: number,) {
-    const code3d = encodeBinary3D(lng, lat, ele, level);
-    return binary3DToBinary1D(code3d)
+export function locToBinary1D(lng: number, lat: number, ele: number, level: number,): bigint {
+    const octal1D = locToOctal1D(lng, lat, ele, level)
+    return octal1DToBinary1D(octal1D)
 }
 /**
- * 将经度、纬度和高度编码为一个八进制的一维编码
+ * 将一个二进制的一维编码解码回经度、纬度和高度
+ *
+ * @param binary1D - 一个二进制的一维编码对象
+ * @returns 一个包含经度、纬度和高度的对象
+ */
+export function binary1DToLoc(binary1D: bigint) {
+    const binary3D = binary1DToBinary3D(binary1D)
+    return binary3dToLoc(binary3D);
+}
+/**
+ * 将经度、纬度和高度编码为一个八进制的一维编码，编码值精度会对齐到level层级
  *
  * @param lng - 经度，以度为单位。范围-180到180度
  * @param lat - 纬度，以度为单位。范围-90到90度
@@ -108,19 +130,18 @@ export function encodeBinary1D(lng: number, lat: number, ele: number, level: num
  * @param radius - 地球半径的近似值，默认为6378137米。
  * @returns 一个八进制的一维编码，包括经度、纬度和高度的八进制表示
  */
-export function encodeOctal1D(lng: number, lat: number, ele: number, level: number,): string {
-    const code3d = encodeBinary3D(lng, lat, ele, level);
-    return binary3DToOctal1D(code3d);
-}
-/**
- * 将一个二进制的一维编码解码回经度、纬度和高度
- *
- * @param binary1D - 一个二进制的一维编码对象
- * @returns 一个包含经度、纬度和高度的对象
- */
-export function decodeBinary1D(binary1D: bigint) {
-    const binary3D = binary1DToBinary3D(binary1D)
-    return decodeBinary3D(binary3D);
+export function locToOctal1D(lng: number, lat: number, ele: number, level: number,): string {
+    const lngBits = BigInt(decimal2code(lng))
+    const latBits = BigInt(decimal2code(lat))
+    const eleBits = BigInt(decimal2code(elevationToDegrees(ele)))
+    let binary1D = 0n;
+    for (let i = 0n; i < 32n; i++) {
+        let offset = 3n * i;
+        binary1D |= ((lngBits >> i) & 1n) << offset;
+        binary1D |= ((latBits >> i) & 1n) << (offset + 1n);
+        binary1D |= ((eleBits >> i) & 1n) << (offset + 2n);
+    }
+    return binary1DToOctal1D(encode1d(binary1D, level));
 }
 /**
  * 将一个八进制的一维编码解码回经度、纬度和高度
@@ -129,9 +150,9 @@ export function decodeBinary1D(binary1D: bigint) {
  * @returns 一个包含经度、纬度和高度的对象
  */
 
-export function decodeOctal1D(octal1D: string) {
+export function octal1DToLoc(octal1D: string) {
     const binary3D = octal1DToBinary3D(octal1D)
-    return decodeBinary3D(binary3D);
+    return binary3dToLoc(binary3D);
 }
 /**
  * 二进制三维编码转为二进制一维编码 
@@ -156,17 +177,8 @@ export function binary3DToBinary1D(binary3D: bigint) {
  * @returns 一个二进制的三维编码对象
  */
 export function binary1DToBinary3D(binary1D: bigint): bigint {
-    const { binary1D: code, level } = decode1d(binary1D);
-    let lngBits = 0n;
-    let latBits = 0n;
-    let eleBits = 0n;
-    for (let i = 0n; i < 32n; i++) {
-        let offset = 3n * i;
-        lngBits |= ((code >> offset) & 1n) << i;
-        latBits |= ((code >> (offset + 1n)) & 1n) << i;
-        eleBits |= ((code >> (offset + 2n)) & 1n) << i;
-    }
-    return encode3d(lngBits, latBits, eleBits, level)
+    const v = binary1DToOctal1D(binary1D)
+    return octal1DToBinary3D(v)
 }
 /**
  * 将一个二进制的三维编码对象转换为八进制的一维编码对象
@@ -185,8 +197,7 @@ export function binary3DToOctal1D(binary3D: bigint) {
 
 export function binary1DToOctal1D(code1d: bigint): string {
     const { binary1D, level } = decode1d(code1d);
-    let str = binary1D.toString(8);//八进制一维码和二进制一维码完全对应
-    return str.padStart(32, "0").substring(0, level)
+    return binary1D.toString(8).padStart(32, "0").substring(0, level)
 }
 /**
  * 将一个八进制的一维编码对象转换为二进制的三维编码对象
@@ -201,7 +212,7 @@ export function octal1DToBinary3D(octal1D: string): bigint {
     let latBits = 0n;
     let eleBits = 0n;
     const level = strs.length;
-    for (let i = 31n; i > 0n; i--) {
+    for (let i = 31n; i >= 0n; i--) {
         let str = strs[Number(31n - i)]
         if (!str) continue
         const code = BigInt(parseInt(str, 8))
@@ -215,8 +226,17 @@ export function octal1DToBinary3D(octal1D: string): bigint {
 export function octal1DToBinary1D(octal1D: string): bigint {
     //@ts-ignore
     const strs = octal1D.replaceAll(/[G\-\.]/g, "");
+    let binary1D = 0n;
     const level = strs.length;
-    const binary1D = BigInt(strs)
+    for (let i = 31n; i >= 0n; i--) {
+        let str = strs[Number(31n - i)]
+        if (!str) continue
+        const code = BigInt(parseInt(str, 8))
+        const offset = 3n * i;
+        binary1D |= (code & 1n) << offset;
+        binary1D |= ((code >> 1n) & 1n) << (offset + 1n);
+        binary1D |= ((code >> 2n) & 1n) << (offset + 2n);
+    }
     return encode1d(binary1D, level)
 }
 
@@ -239,7 +259,6 @@ export function parentByOctal1D(octal1D: string) {
  * @param binary1D - 一个二进制的一维编码对象
  * @returns 一个二进制的一维编码对象的父级
  */
-
 export function parentByBinary1D(binary1D: bigint) {
     return parent(binary1DToOctal1D(binary1D))
 }
@@ -256,7 +275,7 @@ const offsetBits = {
  * @param offset 移动的距离，+代表向前，-代表向后，数值代表移动的距离
  */
 export function moveBinary3D(binary3D: bigint, dimension: "lng" | "lat" | "ele", offset: number): bigint {
-    return binary3D + (BigInt(offset) << ((31n - binary3D & MASK_5) + offsetBits[dimension]))
+    return binary3D + (BigInt(offset) << ((31n - (binary3D & MASK_5)) + offsetBits[dimension]))
 }
 export type Offset = { x: number, y: number, z: number }
 /**

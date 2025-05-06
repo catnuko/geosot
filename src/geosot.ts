@@ -10,7 +10,7 @@ import { decimal2code, gridSize, isNumeric, code2decimal } from "./utils";
  * @param level 层级
  * @returns 二进制编码
  */
-export function encode2number(lng: number, lat: number, level: number): bigint {
+export function locToBinary1D(lng: number, lat: number, level: number): bigint {
     return morton.magicbits(decimal2code(lng), decimal2code(lat));
 }
 /**
@@ -20,8 +20,8 @@ export function encode2number(lng: number, lat: number, level: number): bigint {
  * @param level 层级
  * @returns 四进制编码
  */
-export function encode2string(lng: number, lat: number, level: number) {
-    const num = encode2number(lng, lat, level)
+export function locToQuaternary(lng: number, lat: number, level: number) {
+    const num = locToBinary1D(lng, lat, level)
     return toCode(num, level);
 }
 /**
@@ -44,7 +44,7 @@ export function xyFromId(id: bigint, level: number) {
  * @returns 瓦片行列号
  */
 export function xyFromLngLat(lng: number, lat: number, level: number) {
-    const id = encode2number(lng, lat, level)
+    const id = locToBinary1D(lng, lat, level)
     return xyFromId(id, level)
 }
 /**
@@ -87,7 +87,7 @@ export function cornerFromId(id: bigint, level: number) {
  * @returns 瓦片的经纬度，瓦片的西南角
  */
 export function cornerFromLngLat(lng: number, lat: number, level: number) {
-    const id = encode2number(lng, lat, level)
+    const id = locToBinary1D(lng, lat, level)
     return cornerFromId(id, level)
 }
 /**
@@ -156,7 +156,7 @@ export function bboxFromCode(code: string) {
  * @returns 瓦片的经纬度BoundingBox
  */
 export function bboxFromLngLat(lng: number, lat: number, level: number) {
-    const id = encode2number(lng, lat, level)
+    const id = locToBinary1D(lng, lat, level)
     return bboxFromId(id, level)
 }
 /**

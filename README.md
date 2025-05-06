@@ -63,23 +63,14 @@ compare(32, "39° 54′ 37.0″ N, 116° 18′ 54.7998046875″ E")
 ### GeoSOT-3D
 
 ```typescript
-const ps = [
-    [116.315228, 39.91028, 100.123456789],
-    [-116.315228, -39.91028, -100.123456789],
-    [116.315228, -39.91028, 100.123456789],
-    [-116.315228, 39.91028, 100.123456789],
-    [116.315228, 39.91028, -100.123456789],
-]
-for (let p of ps) {
-    const binary3D = geosot3d.encodeBinary3D(p[0], p[1], p[2], 32)
-    const binary1D = geosot3d.binary3DToBinary1D(binary3D)
-    const octal1D = geosot3d.binary3DToOctal1D(binary3D)
-    expect(geosot3d.octal1DToBinary3D(octal1D)).toStrictEqual(binary3D);
-    expect(geosot3d.binary1DToBinary3D(binary1D)).toStrictEqual(binary3D);
+const level = 23;
+const p1 = [120, 30, 10, level]
+const octal1D = geosot3d.locToOctal1D(p1[0], p1[1], p1[2], p1[3])
+expect(geosot3d.octal1DToBinary1D(octal1D)).toBe(geosot3d.locToBinary1D(p1[0], p1[1], p1[2], p1[3]))
+expect(geosot3d.octal1DToBinary3D(octal1D)).toBe(geosot3d.locToBinary3D(p1[0], p1[1], p1[2], p1[3]))
 
-    const corner = geosot3d.decodeBinary3D(geosot3d.binary1DToBinary3D(binary1D));
-    expect(corner.lng).toBeCloseTo(p[0], 6)
-    expect(corner.lat).toBeCloseTo(p[1], 6)
-    expect(Math.abs(corner.ele - p[2])).toBeLessThan(1.5)
-}
+expect(geosot3d.binary1DToOctal1D(geosot3d.octal1DToBinary1D(octal1D))).toBe(octal1D)
+expect(geosot3d.binary3DToOctal1D(geosot3d.octal1DToBinary3D(octal1D))).toBe(octal1D)
+
+expect(geosot3d.binary1DToBinary3D(geosot3d.locToBinary1D(p1[0], p1[1], p1[2], p1[3]))).toBe(geosot3d.locToBinary3D(p1[0], p1[1], p1[2], p1[3]))
 ```

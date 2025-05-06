@@ -6,19 +6,19 @@ const { geosot, geosot3d, utils } = geos
 test("morton", () => {
   expect(morton.splitBy2Bits(639358566n)).toBe(293861272910566420n)
 })
-test("encode2string", () => {
+test("locToQuaternary", () => {
   {
     let x = 76.233;
     let y = 27.688;
     let level = 32;
-    expect(geosot.encode2number(x, y, level)).toBe(339638376531246140n)
-    expect(geosot.encode2string(x, y, level)).toBe("G001023122-203103-131010.33003300330")
+    expect(geosot.locToBinary1D(x, y, level)).toBe(339638376531246140n)
+    expect(geosot.locToQuaternary(x, y, level)).toBe("G001023122-203103-131010.33003300330")
   }
 
   {
     const lat = 39.91028;
     const lng = 116.315228;
-    expect(geosot.encode2string(lng, lat, 15)).toBe("G001310322-230230");
+    expect(geosot.locToQuaternary(lng, lat, 15)).toBe("G001310322-230230");
   }
 
   const [lat, lng] = sexagesimal.pair("39° 54′ 37.0″ N, 116° 18′ 54.8″ E");
