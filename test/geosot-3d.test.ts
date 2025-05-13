@@ -202,3 +202,44 @@ test("geosot3d.addsub", () => {
         expect(netAdded).toBe(net)
     }
 })
+
+
+test("geosot3d.parent", () => {
+    const p1 = [120, 30, 10]
+    const octal1D = geosot3d.locToOctal1D(p1[0], p1[1], p1[2], 23)
+    const octal1DChild = geosot3d.locToOctal1D(p1[0], p1[1], p1[2], 24)
+    const octal1DParent = geosot3d.locToOctal1D(p1[0], p1[1], p1[2], 22)
+    const octal1DGrandParent = geosot3d.locToOctal1D(p1[0], p1[1], p1[2], 21)
+    expect(geosot3d.isParentByOctal1D(octal1D, octal1DParent)).toBe(true)
+    expect(geosot3d.isParentByOctal1D(octal1DChild, octal1D)).toBe(true)
+    expect(geosot3d.isParentByOctal1D(octal1DParent, octal1DGrandParent)).toBe(true)
+    expect(geosot3d.isParentByOctal1D(octal1D, octal1DGrandParent)).toBe(true)
+    expect(geosot3d.isParentByOctal1D(octal1DChild, octal1DGrandParent)).toBe(true)
+
+    expect(geosot3d.parentByOctal1D(octal1DChild)).toBe(octal1D)
+    expect(geosot3d.parentByOctal1D(octal1D)).toBe(octal1DParent)
+    expect(geosot3d.parentByOctal1D(octal1DParent)).toBe(octal1DGrandParent)
+
+    expect(geosot3d.parentByBinary1D(geosot3d.octal1DToBinary1D(octal1DChild))).toBe(geosot3d.octal1DToBinary1D(octal1D))
+})
+
+test("geosot3d.topoByBinary3D", () => {
+    const p1 = [120, 30, 10]
+    const binary3D = geosot3d.locToBinary3D(p1[0], p1[1], p1[2], 23)
+    const cornerAdja = geosot3d.add(binary3D, { x: 1, y: 1, z: 1 })
+    const edgeAdja = geosot3d.add(binary3D, { x: 0, y: 1, z: 1 })
+    const surfaceAdja = geosot3d.add(binary3D, { x: 0, y: 0, z: 1 })
+    const disjoint = geosot3d.add(binary3D, { x: 2, y: 1, z: 1 })
+    expect(geosot3d.topoByBinary3D(binary3D, cornerAdja)).toBe(geosot3d.TopologicalRelationship.CornerAdjacent)
+    expect(geosot3d.topoByBinary3D(binary3D, edgeAdja)).toBe(geosot3d.TopologicalRelationship.EdgeAdjacent)
+    expect(geosot3d.topoByBinary3D(binary3D, surfaceAdja)).toBe(geosot3d.TopologicalRelationship.SurfaceAdjacent)
+    expect(geosot3d.topoByBinary3D(binary3D, disjoint)).toBe(geosot3d.TopologicalRelationship.Disjoint)
+
+    const binary3DChild = geosot3d.locToBinary3D(p1[0], p1[1], p1[2], 24)
+    const binary3DParent = geosot3d.locToBinary3D(p1[0], p1[1], p1[2], 22)
+    const binary3DGrandParent = geosot3d.locToBinary3D(p1[0], p1[1], p1[2], 21)
+    expect(geosot3d.topoByBinary3D(binary3D, binary3DChild)).toBe(geosot3d.TopologicalRelationship.Contain)
+    expect(geosot3d.topoByBinary3D(binary3D, binary3DParent)).toBe(geosot3d.TopologicalRelationship.ContainedBy)
+    expect(geosot3d.topoByBinary3D(binary3D, binary3DGrandParent)).toBe(geosot3d.TopologicalRelationship.ContainedBy)
+    expect(geosot3d.topoByBinary3D(disjoint,binary3DChild)).toBe(geosot3d.TopologicalRelationship.Disjoint)
+})

@@ -5,6 +5,13 @@
  * 不等距的剖分规则，也就是同一级别中，低海拔的格子的高度和高海拔的高度不一样。GeoSOT-3D为了简化
  * 高度剖分规则，用的等距剖分规则。
  * 
+ * 主要概念：
+ * 1. 二进制三维码：经度(32bits)+纬度(32bits)+高度(32bits)+level(5bits)
+ * 2. 二进制一维码：经度纬度高度交叉(96bits)+level(5bits)
+ * 3. 八进制一维码：经度纬度高度交叉(96bits)转成八进制.substring(0,level)
+ * 4. offset：网格沿经度纬度高度三个方向的偏移格子数
+ * 
+ * 参考文章：
  * 1. 高度和度的转换 https://www.doc88.com/p-1032310223771.html
  * 地心是0度，最高是512度，
  * 根据论文，度D与大地高的H是H = D * (2 * PI * a) * 1°/ 360° - b，其中a,b是长半轴和短半轴
@@ -239,8 +246,6 @@ export function octal1DToBinary1D(octal1D: string): bigint {
     }
     return encode1d(binary1D, level)
 }
-
-export const parent = parentByOctal1D;
 /**
  * 获取一个八进制的一维编码对象的父级
  *
@@ -260,9 +265,108 @@ export function parentByOctal1D(octal1D: string) {
  * @returns 一个二进制的一维编码对象的父级
  */
 export function parentByBinary1D(binary1D: bigint) {
-    return parent(binary1DToOctal1D(binary1D))
+    return octal1DToBinary1D(parentByOctal1D(binary1DToOctal1D(binary1D)))
 }
 
+/**
+ * 判断一个八进制的一维编码对象是否是另一个的子级
+ *
+ * @param parent - 一个八进制的一维编码对象
+ * @param child - 一个八进制的一维编码对象
+ * @returns 如果parent是child的子级返回true，否则false
+ */
+export function isParentByOctal1D(child: string, parent: string) {
+    if (parent.length >= child.length) {
+        return false
+    }
+    return parent === child.substring(0, parent.length);
+}
+
+/**
+ * 获取一个二进制的三维编码对象的子级
+ *
+ * @param binary3D - 一个二进制的三维编码对象
+ * @returns 一个二进制的三维编码对象的子级
+ */
+export function childByOctal1D(parent: string): string[] {
+    const level = parent.length;
+    if (level >= 32) {
+        return []
+    }
+    const child = [];
+    for (let i = 0; i < 8; i++) {
+        child.push(parent + i.toString(8))
+    }
+    return child
+}
+
+export function prefixByBinary1D(code: bigint, n: number): bigint {
+    let { binary1D, level } = decode1d(code)
+    binary1D = binary1D >> BigInt(96 - n)
+    return encode1d(binary1D, level)
+}
+export function suffixByBinary1D(code: bigint, n: number): bigint {
+    let { binary1D, level } = decode1d(code)
+    binary1D = binary1D << BigInt(96 - n);
+    return encode1d(binary1D, level)
+}
+export enum TopologicalRelationship {
+    Disjoint = 0,
+    Contain = 1,
+    ContainedBy = 2,
+    SurfaceAdjacent = 3,
+    EdgeAdjacent = 4,
+    CornerAdjacent = 5,
+    Equal = 6,
+}
+/**
+ * 拓扑关系判断
+ * 
+ * 1. 同级网格码之间的关系有五种，Disjoint,Euqal,SurfaceAdjacent,EdgeAdjacent,CornerAdjacent
+ * 2. 不同级网格码之间的关系有三种，Contain,CoveredBy,Disjoint，B包含A，则返回ContainedBy
+ * @param a 
+ * @param b 
+ * @returns 
+ */
+export function topoByBinary3D(a: bigint, b: bigint): TopologicalRelationship {
+    const levelA = decodeLevel(a)
+    const levelB = decodeLevel(b)
+    //同层的A和B没有Cover,Contain, CoveredBy关系
+    if (levelA === levelB) {
+        if (a === b) {
+            return TopologicalRelationship.Equal
+        } else {
+            const offset = sub(a, b);
+            offset.x = Math.abs(offset.x);
+            offset.y = Math.abs(offset.y);
+            offset.z = Math.abs(offset.z);
+            let oneCount = 0;
+            if (offset.x === 1) {
+                oneCount++;
+            }
+            if (offset.y === 1) {
+                oneCount++;
+            }
+            if (offset.z === 1) {
+                oneCount++;
+            }
+            if (offset.x > 1 || offset.y > 1 || offset.z > 1) {
+                return TopologicalRelationship.Disjoint
+            } else if (oneCount === 1) {
+                return TopologicalRelationship.SurfaceAdjacent
+            } else if (oneCount === 2) {
+                return TopologicalRelationship.EdgeAdjacent
+            } else if (oneCount === 3) {
+                return TopologicalRelationship.CornerAdjacent
+            }
+        }
+    } else if (levelA > levelB) {
+        return isParentByOctal1D(binary3DToOctal1D(a), binary3DToOctal1D(b)) ? TopologicalRelationship.ContainedBy : TopologicalRelationship.Disjoint
+    } else {
+        return isParentByOctal1D(binary3DToOctal1D(b), binary3DToOctal1D(a)) ? TopologicalRelationship.Contain : TopologicalRelationship.Disjoint
+    }
+    return TopologicalRelationship.Disjoint
+}
 const offsetBits = {
     lng: 69n,
     lat: 37n,
@@ -315,7 +419,6 @@ export function sub(a: bigint, b: bigint): Offset {
         z: Number(z)
     };
 }
-
 
 // export function euclideanDistance(a: bigint, b: bigint): number {
 //     const level = decodeLevel(a)
